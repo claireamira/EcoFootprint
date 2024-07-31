@@ -5,6 +5,8 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import './index.css'
 import HomePage from './Components/Home.jsx';
 import CarbonFootprintCalculator from './Components/Calculator.jsx';
+import ResultsPage from './Components/Results.jsx';
+import ResourcesPage from './Components/Resources.jsx';
 
 const router = createBrowserRouter([
   {
@@ -14,6 +16,12 @@ const router = createBrowserRouter([
   },{
     path: '/calculator',
     element: <CarbonFootprintCalculator/>
+  },{
+    path: '/results',
+    element: <ResultsPage/>
+  },{
+    path: '/resources',
+    element: <ResourcesPage/>
   }
 ]);
 

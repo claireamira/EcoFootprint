@@ -1,80 +1,87 @@
-// src/components/CarbonFootprintChart.js
-import React from 'react';
-import { Bar, Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement } from 'chart.js';
+import React, { useEffect, useState } from "react";
+import {database} from "../firebase.jsx"
+import { ref, onValue } from "firebase/database";
+import { Bar } from 'react-chartjs-2';
+import Chart from 'chart.js/auto';
+import Navbar from "./Navbar";
+import './ResultsStyling.css';
 
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement);
+const ResultsPage = () => {
+  const [chartData, setChartData] = useState(null);
 
-const CarbonFootprintChart = ({ data }) => {
-  const chartData = {
-    labels: ['Transport', 'Food & Beverage', 'Waste', 'Fashion'],
-    datasets: [
-      {
-        label: 'Carbon Footprint (kg CO2)',
-        data: [
-          data.transportCarbonFootprint || 0,
-          data.foodCarbonFootprint || 0,
-          data.wasteCarbonFootprint || 0,
-          data.fashionCarbonFootprint || 0
-        ],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.2)',
-          'rgba(54, 162, 235, 0.2)',
-          'rgba(255, 206, 86, 0.2)',
-          'rgba(75, 192, 192, 0.2)'
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)'
-        ],
-        borderWidth: 1,
+  useEffect(() => {
+    const carbonFootprintRef = ref(database, 'carbonFootprints');
+    onValue(carbonFootprintRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const entries = Object.entries(data).map(([key, value]) => ({ ...value, id: key }));
+        const sortedEntries = entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 7);
+
+        // Ensure the entries array has exactly 7 items by filling with null or empty values if needed
+        while (sortedEntries.length < 7) {
+          sortedEntries.push({ transportCarbon: 0, foodCarbon: 0, wasteCarbon: 0, fashionCarbon: 0, totalCarbon: 0 });
+        }
+
+        const transportData = sortedEntries.map(entry => entry.transportCarbon).reverse();
+        const foodData = sortedEntries.map(entry => entry.foodCarbon).reverse();
+        const wasteData = sortedEntries.map(entry => entry.wasteCarbon).reverse();
+        const fashionData = sortedEntries.map(entry => entry.fashionCarbon).reverse();
+        const totalData = sortedEntries.map(entry => entry.totalCarbon).reverse();
+        const labels = Array.from({ length: 7 }, (_, i) => `Week ${i + 1}`);
+
+        setChartData({
+          labels,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Transport Carbon Footprint',
+              data: transportData,
+              backgroundColor: 'rgba(75, 192, 192, 0.6)',
+            },
+            {
+              type: 'bar',
+              label: 'Food Carbon Footprint',
+              data: foodData,
+              backgroundColor: 'rgba(255, 99, 132, 0.6)',
+            },
+            {
+              type: 'bar',
+              label: 'Waste Carbon Footprint',
+              data: wasteData,
+              backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            },
+            {
+              type: 'bar',
+              label: 'Fashion Carbon Footprint',
+              data: fashionData,
+              backgroundColor: 'rgba(255, 206, 86, 0.6)',
+            },
+            {
+              type: 'line',
+              label: 'Total Carbon Footprint',
+              data: totalData,
+              backgroundColor: 'rgba(75, 192, 192, 1)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              fill: false,
+            }
+          ],
+        });
       }
-    ],
-  };
-
-  const pieChartData = {
-    labels: ['Transport', 'Food & Beverage', 'Waste', 'Fashion'],
-    datasets: [
-      {
-        label: 'Carbon Footprint (kg CO2)',
-        data: [
-          data.transportCarbonFootprint || 0,
-          data.foodCarbonFootprint || 0,
-          data.wasteCarbonFootprint || 0,
-          data.fashionCarbonFootprint || 0
-        ],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.2)',
-          'rgba(54, 162, 235, 0.2)',
-          'rgba(255, 206, 86, 0.2)',
-          'rgba(75, 192, 192, 0.2)'
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)'
-        ],
-        borderWidth: 1,
-      }
-    ],
-  };
+    });
+  }, []);
 
   return (
-    <div>
-      <h2>Carbon Footprint Visualization</h2>
-      <div>
-        <h3>Bar Chart</h3>
-        <Bar data={chartData} options={{ responsive: true }} />
+    <>
+      <div className="container">
+        <h1>My Historical Carbon Footprint Data</h1>
+        {chartData && (
+          <div className="chart-container">
+            <Bar data={chartData} />
+          </div>
+        )}
       </div>
-      <div>
-        <h3>Pie Chart</h3>
-        <Pie data={pieChartData} options={{ responsive: true }} />
-      </div>
-    </div>
+    </>
   );
 };
 
-export default CarbonFootprintChart;
+export default ResultsPage;
